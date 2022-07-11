@@ -1,0 +1,11 @@
+#cuda==11.3
+soundFile
+rich
+pytorch>=1.10.0
+torchaudio>=0.10.0
+pytorch_model_summary
+hyperpyyaml
+numpy
+pandas
+speechbrain>=0.5.11
+scikit-learn>=1.0.1

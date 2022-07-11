@@ -1,0 +1,124 @@
+seed: 1666
+__set_seed: !!python/object/apply:torch.manual_seed [!ref <seed>]
+
+rir_folder : asv/VoxCeleb/
+data_folder: cm_meta
+output_folder: !ref ./results/ecapa_2021_DF/<seed>
+save_folder: !ref <output_folder>/save
+train_log: !ref <output_folder>/train_log.txt
+
+train_annotation: !ref <data_folder>/cm_train.csv
+dev_annotation: !ref <data_folder>/cm_dev.csv
+eval_annotation: !ref <data_folder>/cm_eval.csv
+
+train_option: "2021DF"
+eval_option: "2021DF"
+
+emb_dim: 256
+n_lfcc: 60
+# Training Parameters
+sample_rate: 16000
+sentence_len: 4.0
+number_of_epochs: 100
+batch_size: 16
+lr_start: 0.0005
+
+dataloader_options:
+  batch_size: !ref <batch_size>
+  shuffle: True
+  drop_last: False
+  num_workers: 4
+  pin_memory: True 
+
+valid_dataloader_options:
+  batch_size: 64
+  shuffle: False
+  drop_last: False
+  num_workers: 4
+  pin_memory: True 
+
+# save checkpoint every N min
+#########-------------------Data----------------------##########
+#########-------------------End-----------------------##########
+
+train_logger: !new:speechbrain.utils.train_logger.FileTrainLogger
+  save_file: !ref <train_log>
+
+cm_loss_metric: !new:loss.p2sgrad.P2SGradLoss
+  in_dim: !ref <emb_dim>
+  out_dim: 2
+
+attack_loss_metric: !new:loss.aamsoftmax.AAMSoftmax
+  enc_dim: 256
+  n_class: 7 
+
+
+#########-----------------Augment---------------------##########
+#########-----------------Start-----------------------##########
+augment: True
+
+aug_compression: !new:dataset.speech_process.LADFAug
+  aug_type: "compression"
+  aug_times: 3
+
+concat_augment: True
+
+augment_pipeline: [
+    !ref <aug_compression>,
+]
+#########-----------------Augment---------------------##########
+#########------------------End-----------------------##########
+
+
+#########-----------------Modules---------------------##########
+#########-----------------Start-----------------------##########
+mean_var_norm: !new:speechbrain.processing.features.InputNormalization
+  norm_type: sentence
+  std_norm: False
+
+compute_lfcc: !new:dataset.feature_layers.LFCC
+    fl: 320
+    fs: 160
+    fn: 512
+    sr: 16000
+    filter_num: 20
+
+cm_encoder: !new:models.ecapatdnn.ECAPA_TDNN
+    input_size: !ref <n_lfcc> 
+    lin_neurons: 256 
+    channels: [512,512,512,512,1536]
+
+epoch_counter: !new:speechbrain.utils.epoch_loop.EpochCounter
+  limit: !ref <number_of_epochs>
+
+lr_scheduler: !new:speechbrain.nnet.schedulers.StepScheduler
+  initial_value: !ref <lr_start>
+  decay_factor: 0.5
+  decay_drop: 20
+
+modules:
+  compute_lfcc: !ref <compute_lfcc>
+  aug_compression: !ref <aug_compression>
+  cm_encoder: !ref <cm_encoder>
+  mean_var_norm: !ref <mean_var_norm>
+  cm_loss_metric: !ref <cm_loss_metric>
+
+
+label_encoder: !new:speechbrain.dataio.encoder.CategoricalEncoder
+#########-----------------Modules---------------------##########
+#########-------------------End-----------------------##########
+
+
+#########-----------------Trainer---------------------##########
+#########-----------------Start-----------------------##########
+opt_class: !name:torch.optim.Adam
+  lr: !ref <lr_start>
+
+checkpointer: !new:speechbrain.utils.checkpoints.Checkpointer
+  checkpoints_dir: !ref <save_folder>
+  recoverables:
+    cm_encoder: !ref <cm_encoder>
+    counter: !ref <epoch_counter>
+    cm_loss_metric: !ref <cm_loss_metric>
+#########-----------------Trainer---------------------##########
+#########-------------------End-----------------------##########

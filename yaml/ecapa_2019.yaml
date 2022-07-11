@@ -1,0 +1,151 @@
+seed: 1666
+__set_seed: !!python/object/apply:torch.manual_seed [!ref <seed>]
+
+rir_folder : asv/VoxCeleb/
+data_folder: cm_meta
+output_folder: !ref ./results/ecapa_2019/<seed>
+save_folder: !ref <output_folder>/save
+train_log: !ref <output_folder>/train_log.txt
+
+train_annotation: !ref <data_folder>/cm_train.csv
+dev_annotation: !ref <data_folder>/cm_dev.csv
+eval_annotation: !ref <data_folder>/cm_eval.csv
+
+train_option: "2019LA"
+eval_option: "2019LA"
+
+emb_dim: 256
+n_lfcc: 60
+# Training Parameters
+sample_rate: 16000
+sentence_len: 4.0
+number_of_epochs: 100
+batch_size: 64
+lr_start: 0.0005
+
+dataloader_options:
+  batch_size: !ref <batch_size>
+  shuffle: True
+  drop_last: False
+  num_workers: 4
+  pin_memory: True 
+
+valid_dataloader_options:
+  batch_size: 128
+  shuffle: False
+  drop_last: False
+  num_workers: 6
+  pin_memory: True 
+# save checkpoint every N min
+#########-------------------Data----------------------##########
+#########-------------------End-----------------------##########
+
+train_logger: !new:speechbrain.utils.train_logger.FileTrainLogger
+  save_file: !ref <train_log>
+
+# cm_loss_metric: !new:loss.oneclass.OCSoftmax
+#   in_dim: !ref <emb_dim>
+
+cm_loss_metric: !new:loss.p2sgrad.P2SGradLoss
+  in_dim: !ref <emb_dim>
+  out_dim: 2
+
+attack_loss_metric: !new:loss.aamsoftmax.AAMSoftmax
+  enc_dim: 256
+  n_class: 7 
+
+
+#########-----------------Augment---------------------##########
+#########-----------------Start-----------------------##########
+# augment_wavedrop: !new:speechbrain.lobes.augment.TimeDomainSpecAugment
+#     sample_rate: !ref <sample_rate>
+#     speeds: [100]
+
+# augment_speed: !new:speechbrain.lobes.augment.TimeDomainSpecAugment
+#     sample_rate: !ref <sample_rate>
+#     speeds: [95, 100, 105]
+
+# add_rev_noise: !new:speechbrain.lobes.augment.EnvCorrupt
+#     openrir_folder: !ref <rir_folder>
+#     openrir_max_noise_len: 2.0  # seconds
+#     reverb_prob: 0.5
+#     noise_prob: 0.5
+#     noise_snr_low: 0
+#     noise_snr_high: 15
+#     rir_scale_factor: 1.0
+
+# augment_pipeline: [
+#     !ref <augment_wavedrop>,
+#     !ref <augment_speed>,
+#     !ref <add_rev_noise>
+# ]
+
+# aug_codec: !new:dataset.speech_process.LADFAug
+#   aug_type: "codec"
+#   aug_times: 2
+
+# aug_compression: !new:dataset.speech_process.LADFAug
+#   aug_type: "compression"
+#   aug_times: 1
+
+# concat_augment: True
+
+# augment_pipeline: [
+#     !ref <aug_codec>,
+#     !ref <aug_compression>,
+# ]
+#########-----------------Augment---------------------##########
+#########------------------End-----------------------##########
+
+
+#########-----------------Modules---------------------##########
+#########-----------------Start-----------------------##########
+mean_var_norm: !new:speechbrain.processing.features.InputNormalization
+  norm_type: sentence
+  std_norm: False
+
+compute_lfcc: !new:dataset.feature_layers.LFCC
+    fl: 320
+    fs: 160
+    fn: 512
+    sr: 16000
+    filter_num: 20
+
+cm_encoder: !new:models.ecapatdnn.ECAPA_TDNN
+    input_size: !ref <n_lfcc> 
+    lin_neurons: 256 
+    channels: [256,256,256,256,768]
+
+epoch_counter: !new:speechbrain.utils.epoch_loop.EpochCounter
+  limit: !ref <number_of_epochs>
+
+lr_scheduler: !new:speechbrain.nnet.schedulers.StepScheduler
+  initial_value: !ref <lr_start>
+  decay_factor: 0.5
+  decay_drop: 20
+
+modules:
+  compute_lfcc: !ref <compute_lfcc>
+  cm_encoder: !ref <cm_encoder>
+  mean_var_norm: !ref <mean_var_norm>
+  cm_loss_metric: !ref <cm_loss_metric>
+
+
+label_encoder: !new:speechbrain.dataio.encoder.CategoricalEncoder
+#########-----------------Modules---------------------##########
+#########-------------------End-----------------------##########
+
+
+#########-----------------Trainer---------------------##########
+#########-----------------Start-----------------------##########
+opt_class: !name:torch.optim.Adam
+  lr: !ref <lr_start>
+
+checkpointer: !new:speechbrain.utils.checkpoints.Checkpointer
+  checkpoints_dir: !ref <save_folder>
+  recoverables:
+    cm_encoder: !ref <cm_encoder>
+    counter: !ref <epoch_counter>
+    cm_loss_metric: !ref <cm_loss_metric>
+#########-----------------Trainer---------------------##########
+#########-------------------End-----------------------##########

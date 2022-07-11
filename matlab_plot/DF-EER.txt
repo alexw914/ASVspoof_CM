@@ -1,0 +1,6 @@
+                                   	 DF-C1 	 DF-C2 	 DF-C3 	 DF-C4 	 DF-C5 	 DF-C6 	 DF-C7 	 DF-C8 	 DF-C9
+        traditional vocoder        	 20.68 	 22.53 	 19.32 	 27.30 	 22.77 	 15.31 	 15.82 	 17.05 	 23.00
+      waveform concatenation       	  5.56 	  6.32 	 11.29 	 17.60 	  8.93 	  4.57 	  5.10 	  6.52 	  7.06	
+  neural vocoder (autoregressive)  	 23.79 	 25.31 	 19.10 	 31.48 	 25.36 	 15.70 	 15.87 	 16.93 	 25.64 	
+neural vocoder (non-autoregressive)	 26.40 	 29.23 	 19.96 	 32.19 	 28.64 	 17.10 	 16.88 	 17.92 	 28.99	
+              unknown              	 16.77 	 17.90 	 15.04 	 24.73 	 17.94 	 10.87 	 10.56 	 12.39 	 18.25	
