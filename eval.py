@@ -21,7 +21,7 @@ Path(OUTPUT_DIR).mkdir(exist_ok=True)
 
 if __name__ == "__main__":
 
-    VISUALIZE = True 
+    VISUALIZE = False 
     SCORE = True
 
     logger = logging.getLogger(__name__)
