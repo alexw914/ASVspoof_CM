@@ -43,7 +43,7 @@ The eval protocol file sizes is large. You can use bash download it.
 ```
 $ ./download_keys.sh
 ```
-If the network is not very well, you can download on the [website](https://www.asvspoof.org/index2021.html).Put it in keys folder like follows, the ASVspoof2019_LA_eval_asv_scores.txt file is provide in "ASVspoof2019/LA/ASVspoof2019_LA_asv_scores".
+If the network is not very well, you can download on the [website](https://www.asvspoof.org/index2021.html).Put it in keys folder like follows, the ASVspoof2019_LA_eval_asv_scores.txt file is provided in "ASVspoof2019/LA/ASVspoof2019_LA_asv_scores".
 
         keys
         ├── 2019LA
