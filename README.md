@@ -79,7 +79,7 @@ if all work above has down. You can train in ASVspoof2021.
 ```
 python train.py yaml/ecapa_2021_LA.yaml
 ```
-Or you can train in DF, the progress set will used as devset in LA and DF training. In ASVspoof2019, we test evalset in each epoch.
+Or you can train in DF, the progress set will used for dev in LA and DF training. In ASVspoof2019, we test eval set in each epoch.
 
 If you want use other models, you just need to change the yaml file.
 
