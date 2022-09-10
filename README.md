@@ -102,16 +102,16 @@ The matlab_plot folder provide the algorithms for plot bar or DET curves. You ju
 	<tr>
 		<td>
 			<center>
-				<img src="matlab_plot/Detailed-eer.png" width="60%" />
+				<img src="matlab_plot/Detailed-eer.png" width="80%" />
 				<br/>
-				<font color="AAAAAA">001.jpg</font>
+				<font color="AAAAAA">EER.jpg</font>
 			</center>
 		</td>
 		<td>
 			<center>
-				<img src="matlab_plot/DET.png" width="60%" />
+				<img src="matlab_plot/DET.png" width="80%" />
 				<br/>
-				<font color="AAAAAA">002.jpg</font>
+				<font color="AAAAAA">DET.jpg</font>
 			</center>
 		</td>
 	</tr>
