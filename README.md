@@ -93,13 +93,12 @@ Test the ASVspoof2021LA or DF, just
 python eval.py yaml/ecapa_2021_LA.yaml && python eval.py yaml/ecapa_2021_DF.yaml
 ```
 The test algorithm provide by organizers can not show the detailed EER or min-tDCF, if you want to get the detailed EER. You need to detailed in the website. [LA](https://competitions.codalab.org/competitions/35161) and [DF](https://competitions.codalab.org/competitions/35159).In eval.py, it provides visualize option. Like this:
-<div  align="center"> <img src="matlab_plot/vis.png" width = "300" height = "300" align=center /></div>
+<div  align="center"> <img src="matlab_plot/vis.png" width = "400" height = "400" align=center /></div>
 
 ## Plot
 The matlab_plot folder provide the algorithms for plot bar or DET curves. You just to change it for use.The important thing is that the scorefile format for plot and for submit to the website is not same. Figure like this
 <center class="half">
-<img src="matlab_plot/Detailed-eer.png" width=400/>
-<img src="matlab_plot/DET.png" width=400/>
+<img src="matlab_plot/Detailed-eer.png" width=400/><img src="matlab_plot/DET.png" width=400/>
 </center>
 
 ## Score fusion
