@@ -34,6 +34,7 @@ You can use the data augmentation way in the project shown in the yaml file. It 
 Recently, the new augmentation way provided by this [article](https://arxiv.org/pdf/2211.06546.pdf) is easier and efficient, but as the device and development environment, or may be wrong implementation, i can't reproduce the results in this article.
 
 The results of different models are as follows:
+
 | Model | Params | Augment | Acoustic features | 2021LA | 2021DF |
 |:------|:------:|:--:|:-------:|:------------:|:------------:|:------------:|
 | ECAPA_TDNN_GLOB_c512-ContextASP-emb256  | 6.31M | codec | LFCC | EER 4.70% min-tDCF 0.2882 | - |
