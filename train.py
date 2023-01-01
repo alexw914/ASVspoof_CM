@@ -4,6 +4,7 @@ from hyperpyyaml import load_hyperpyyaml
 from dataset.cm_eval_dataset import get_eval_dataset
 from models.cm_2021_df import CM_DF
 from models.cm_2021 import CM
+# from models.cm_2021_ecapa import CM   # using codec and transmission using this model
 from models.cm_2019 import CM_2019
 from dataset.cm_dataset import get_dataset
 import warnings

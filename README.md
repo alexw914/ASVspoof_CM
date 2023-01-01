@@ -38,7 +38,7 @@ The results of different models are as follows:
 |:------|:------:|:--:|:-------:|:------------:|:------------:|:------------:|
 | ECAPA_TDNN_GLOB_c512-ContextASP-emb256  | 6.31M | codec | LFCC | EER 4.70% min-tDCF 0.2882 | - |
 |                                   |       | transmission | LFCC | - | EER 22.17% |
-| ResNet18-ASP-emb128 | 1.21M | MUSAN+RIR | FBANK(Blackman-window)-band trimming | EER 5.95% min-tDCF 0.334 | EER 16.15% |
+| ResNet18-ASP-emb128(Warm-up) | 1.21M | MUSAN+RIR | FBANK(Blackman-window)-band trimming | EER 5.95% min-tDCF 0.334 | EER 16.15% |
 
 ## Prepare
 ### Link

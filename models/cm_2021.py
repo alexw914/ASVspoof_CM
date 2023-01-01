@@ -11,10 +11,9 @@ class CM(sb.Brain):
     def compute_forward(self, batch, stage):
         
         batch = batch.to(self.device)
-        lfccs, lens = self.prepare_features(batch.sig, batch, stage)
-        lfccs = lfccs.transpose(1,2)
-        enc_output = self.modules.cm_encoder(lfccs)
-
+        features, lens = self.prepare_features(batch.sig, batch, stage)
+        enc_output = self.modules.cm_encoder(features.transpose(1,2))
+        
         return enc_output
 
     def prepare_features(self, wavs, batch, stage):
@@ -26,18 +25,29 @@ class CM(sb.Brain):
             wavs_aug_tot.append(wavs)
             for count, augment in enumerate(self.hparams.augment_pipeline):
                 # Apply augment
-                wavs_aug = augment(batch.id).to(self.device)
+                wavs_aug = augment(wavs, lens)
+                # Managing speed change
+                if wavs_aug.shape[1] > wavs.shape[1]:
+                    wavs_aug = wavs_aug[:, 0 : wavs.shape[1]]
+                else:
+                    zero_sig = torch.zeros_like(wavs)
+                    zero_sig[:, 0 : wavs_aug.shape[1]] = wavs_aug
+                    wavs_aug = zero_sig
                 if self.hparams.concat_augment:
                     wavs_aug_tot.append(wavs_aug)
                 else:
                     wavs = wavs_aug
                     wavs_aug_tot[0] = wavs
-                    
             wavs = torch.cat(wavs_aug_tot, dim=0)
-            self.n_augment = 4
-            lens = torch.cat([lens] * self.n_augment)
+            self.n_augment = len(wavs_aug_tot)
+            lens = torch.cat([lens] * self.n_augment) 
 
-        feats = self.modules.compute_lfcc(wavs)
+        feats = self.modules.compute_features(wavs)
+
+        if stage == sb.Stage.TRAIN:
+            if hasattr(self.hparams, "SpecAugment"):
+                feats = self.hparams.SpecAugment(feats)
+
         feats = self.modules.mean_var_norm(feats, lens)
 
         return feats, lens
@@ -60,7 +70,7 @@ class CM(sb.Brain):
         # Concatenate labels (due to data augmentation)
 
         bonafide_encoded, lens = batch.bonafide_encoded
-        enc_output = predictions
+        cm_output = predictions
 
         if stage==sb.Stage.TRAIN:
             
@@ -72,10 +82,13 @@ class CM(sb.Brain):
             # loss = attack_loss + cm_loss
             # self.top1.append(acc.detach().item())
 
-        cm_loss, cm_score = self.modules.cm_loss_metric(torch.squeeze(enc_output,1), torch.squeeze(bonafide_encoded,1))
+        cm_loss = self.modules.cm_loss_metric(torch.squeeze(cm_output,1), torch.squeeze(bonafide_encoded,1))
         # Compute classification error at test time
         if stage != sb.Stage.TRAIN:
+            cm_output = torch.softmax(cm_output.squeeze(1), dim=-1)
+            cm_score = cm_output[:, 1].unsqueeze(1)
             self.error_metrics.append(batch.id, cm_score, bonafide_encoded)
+
         return cm_loss
 
     def on_stage_start(self, stage, epoch=None):
@@ -90,6 +103,13 @@ class CM(sb.Brain):
         """
         # Set up evaluation-only statistics trackers
         # self.top1 = []
+        if stage == sb.Stage.TRAIN:
+            if epoch <= 4:
+                new_lr = self.hparams.warmup_scheduler.get_next_value()
+                sb.nnet.schedulers.update_learning_rate(self.optimizer, new_lr)
+            if epoch == 5:
+                sb.nnet.schedulers.update_learning_rate(self.optimizer, 0.001)
+
         if stage != sb.Stage.TRAIN:
             self.error_metrics = BinaryMetricStats(eval_opt="2021LA-progress")
 
@@ -121,15 +141,23 @@ class CM(sb.Brain):
 
         # At the end of validation...
         if stage == sb.Stage.VALID:
-            old_lr, new_lr = self.hparams.lr_scheduler(current_epoch = epoch)
-            sb.nnet.schedulers.update_learning_rate(self.optimizer, new_lr)
+            if epoch <= 4:
+                self.hparams.train_logger.log_stats(
+                    {"Epoch": epoch, "lr": "warmup"},
+                    train_stats={"loss": self.train_loss},
+                    valid_stats=stats,
+                )
 
-            # The train_logger writes a summary to stdout and to the logfile.
-            self.hparams.train_logger.log_stats(
-                {"Epoch": epoch, "lr": old_lr},
-                train_stats={"loss": self.train_loss},
-                valid_stats=stats,
-            )
+            else:
+                old_lr, new_lr = self.hparams.lr_scheduler([self.optimizer], current_epoch=epoch, current_loss=stage_loss)
+                sb.nnet.schedulers.update_learning_rate(self.optimizer, new_lr)
+
+                # The train_logger writes a summary to stdout and to the logfile.
+                self.hparams.train_logger.log_stats(
+                    {"Epoch": epoch, "lr": old_lr},
+                    train_stats={"loss": self.train_loss},
+                    valid_stats=stats,
+                )
 
             # Save the current checkpoint and delete previous checkpoints,
             self.checkpointer.save_and_keep_only(meta=stats,
@@ -157,9 +185,11 @@ class CM(sb.Brain):
             loss = self.compute_objectives(out, batch, stage=stage)
             return loss.detach().cpu()
         else:
-            enc_output = self.compute_forward(batch, stage=stage)
-            cm_loss, cm_score =  self.modules.cm_loss_metric(torch.squeeze(enc_output,1), is_train=False)
-            return cm_score, enc_output
+            cm_output = self.compute_forward(batch, stage=stage)
+            cm_output = torch.softmax(cm_output.squeeze(1), dim=-1)
+            cm_score = cm_output[:, 1].unsqueeze(1)
+            # cm_loss, cm_score =  self.modules.cm_loss_metric(torch.squeeze(enc_output,1), is_train=False)
+            return cm_score, cm_output
 
     def evaluate(
             self,

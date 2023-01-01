@@ -114,7 +114,7 @@ lr_scheduler: !new:speechbrain.nnet.schedulers.StepScheduler
   decay_drop: 20
 
 modules:
-  compute_features: !ref <compute_lfcc>
+  compute_features: !ref <compute_features>
   aug_codec: !ref <aug_codec>
   cm_encoder: !ref <cm_encoder>
   mean_var_norm: !ref <mean_var_norm>
