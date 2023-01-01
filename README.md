@@ -31,6 +31,15 @@ The LA and DF need data augmentation, it's a hard work. you can refer this [repo
 
 You can use the data augmentation way in the project shown in the yaml file. It is not very efficent. Or you can design a new method.
 
+Recently, the new augmentation way provided by this [article](https://arxiv.org/pdf/2211.06546.pdf) is easier and efficient, but as the device and development environment, or may be wrong implementation, i can't reproduce the results in this article.
+
+The results of different models are as follows:
+| Model | Params | Augment | Acoustic features | 2021LA | 2021DF |
+|:------|:------:|:--:|:-------:|:------------:|:------------:|:------------:|
+| ECAPA_TDNN_GLOB_c512-ContextASP-emb256  | 6.31M | codec | LFCC | EER 4.70% min-tDCF 0.2882 | - |
+|                                   |       | transmission | LFCC | - | EER 22.17% |
+| ResNet18-ASP-emb128 | 1.21M | MUSAN+RIR | FBANK(Blackman-window)-band trimming | EER 5.95% min-tDCF 0.334 | EER 16.15% |
+
 ## Prepare
 ### Link
 Return to project main folder，make link to the ASVspoof2019 dataset folder: 
@@ -43,7 +52,7 @@ The eval protocol file sizes is large. You can use bash download it.
 ```
 $ ./download_keys.sh
 ```
-If the network is not very well, you can download on the [website](https://www.asvspoof.org/index2021.html).Put it in keys folder like follows, the ASVspoof2019_LA_eval_asv_scores.txt file is provided in "ASVspoof2019/LA/ASVspoof2019_LA_asv_scores".
+If the network is not very well, you can download on the [website](https://www.asvspoof.org/index2021.html).Put it in keys folder like follows, the ASVspoof2019_LA_eval_asv_scores.txt file is provide in "ASVspoof2019/LA/ASVspoof2019_LA_asv_scores".
 
         keys
         ├── 2019LA
@@ -79,7 +88,7 @@ if all work above has down. You can train in ASVspoof2021.
 ```
 python train.py yaml/ecapa_2021_LA.yaml
 ```
-Or you can train in DF, the progress set will used for dev in LA and DF training. In ASVspoof2019, we test eval set in each epoch.
+Or you can train in DF, the progress set will used as devset in LA and DF training. In ASVspoof2019, we test evalset in each epoch.
 
 If you want use other models, you just need to change the yaml file.
 
@@ -92,30 +101,15 @@ Test the ASVspoof2021LA or DF, just
 ```
 python eval.py yaml/ecapa_2021_LA.yaml && python eval.py yaml/ecapa_2021_DF.yaml
 ```
-The test algorithm provide by organizers can not show the detailed EER or min-tDCF, if you want to get the detailed EER. You need to detailed in the website. [LA](https://competitions.codalab.org/competitions/35161) and [DF](https://competitions.codalab.org/competitions/35159).In eval.py, it provides visualize option. Like this:
-<div  align="center"> <img src="matlab_plot/vis.png" width = "400" hight="400" align=center /></div>
+The test algorithm provide by organizers can not show the detailed EER or min-tDCF, if you want to get the detailed EER. You need to detailed in the website. [LA](https://competitions.codalab.org/competitions/35161) and [DF](https://competitions.codalab.org/competitions/35159）. In eval.py, it provides visualize option. Like this:
+<div  align="center"> <img src="matlab_plot/vis.png" width = "300" height = "300" align=center /></div>
 
 ## Plot
 The matlab_plot folder provide the algorithms for plot bar or DET curves. You just to change it for use.The important thing is that the scorefile format for plot and for submit to the website is not same. Figure like this
-
-<table rules="none" align="center">
-	<tr>
-		<td>
-			<center>
-				<img src="matlab_plot/Detailed-eer.png" width="80%" />
-				<br/>
-				<font color="AAAAAA">Detailed EER</font>
-			</center>
-		</td>
-		<td>
-			<center>
-				<img src="matlab_plot/DET.png" width="80%" />
-				<br/>
-				<font color="AAAAAA">DET Curves</font>
-			</center>
-		</td>
-	</tr>
-</table>
+<center class="half">
+<img src="matlab_plot/Detailed-eer.png" width=200/>
+<img src="matlab_plot/DET.png" width=200/>
+</center>
 
 ## Score fusion
 This fusion algorithm is provided by this [repo](https://github.com/yzyouzhang/ASVspoof2021_AIR). But the algorithm will change the index. If you submit the score file to website, you can't get the correct detailed EER.

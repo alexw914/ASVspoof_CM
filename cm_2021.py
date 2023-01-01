@@ -1,30 +1,58 @@
-import torch,librosa,torchaudio,nnAudio.Spectrogram
+import torch
 import speechbrain as sb
-import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from speechbrain import Stage
 from tqdm.contrib import tqdm
 from pytorch_model_summary import summary
 from models.BinaryMetricStats import BinaryMetricStats
-from speechbrain.nnet.losses import nll_loss
 
 class CM(sb.Brain):
 
     def compute_forward(self, batch, stage):
         
         batch = batch.to(self.device)
-        lfccs, lens = self.prepare_features(batch.sig, batch, stage)
-        lfccs = lfccs.transpose(1,2)
-        enc_output = self.modules.cm_encoder(lfccs)
-        codec_output = self.modules.domain_classifier(enc_output)
-
-        return enc_output,codec_output
+        features, lens = self.prepare_features(batch.sig, batch, stage)
+        enc_output = self.modules.cm_encoder(features.transpose(1,2))
+        
+        return enc_output
 
     def prepare_features(self, wavs, batch, stage):
 
         wavs, lens = wavs
-        feats = self.modules.compute_lfcc(wavs)
+        if stage == sb.Stage.TRAIN:
+            # Applying the augmentation pipeline
+            wavs_aug_tot = []
+            wavs_aug_tot.append(wavs)
+            for count, augment in enumerate(self.hparams.augment_pipeline):
+                # Apply augment
+                wavs_aug = augment(wavs, lens)
+                # Managing speed change
+                if wavs_aug.shape[1] > wavs.shape[1]:
+                    wavs_aug = wavs_aug[:, 0 : wavs.shape[1]]
+                else:
+                    zero_sig = torch.zeros_like(wavs)
+                    zero_sig[:, 0 : wavs_aug.shape[1]] = wavs_aug
+                    wavs_aug = zero_sig
+                if self.hparams.concat_augment:
+                    wavs_aug_tot.append(wavs_aug)
+                else:
+                    wavs = wavs_aug
+                    wavs_aug_tot[0] = wavs
+            wavs = torch.cat(wavs_aug_tot, dim=0)
+            if hasattr(self.hparams, "aug_codec") or hasattr(self.hparams, "aug_compression"):
+                self.n_augment = 4
+            else:
+                self.n_augment = len(wavs_aug_tot)
+            lens = torch.cat([lens] * self.n_augment) 
+
+        feats = self.modules.compute_features(wavs)
+
+        if stage == sb.Stage.TRAIN:
+            if hasattr(self.hparams, "SpecAugment"):
+                feats = self.hparams.SpecAugment(feats)
+
         feats = self.modules.mean_var_norm(feats, lens)
+
         return feats, lens
 
     def compute_objectives(self, predictions, batch, stage):
@@ -45,19 +73,26 @@ class CM(sb.Brain):
         # Concatenate labels (due to data augmentation)
 
         bonafide_encoded, lens = batch.bonafide_encoded
-        enc_output,codec_output = predictions
+        cm_output = predictions
 
-        cm_loss, cm_score = self.modules.cm_loss_metric(torch.squeeze(enc_output,1), torch.squeeze(bonafide_encoded,1))
+        if stage==sb.Stage.TRAIN:
+            
+            bonafide_encoded = torch.cat([bonafide_encoded]*self.n_augment, dim = 0)
+            lens = torch.cat([lens]*self.n_augment, dim=0)
+
+            # cm_loss, cm_score = self.modules.cm_loss_metric(torch.squeeze(enc_output,1), torch.squeeze(bonafide_encoded,1))
+            # attack_loss, acc = self.modules.attack_loss_metric(torch.squeeze(enc_output,1), torch.squeeze(attack_encoded,1))
+            # loss = attack_loss + cm_loss
+            # self.top1.append(acc.detach().item())
+
+        cm_loss = self.modules.cm_loss_metric(torch.squeeze(cm_output,1), torch.squeeze(bonafide_encoded,1))
         # Compute classification error at test time
-        loss = cm_loss
-        if stage == sb.Stage.TRAIN:
-            domain_encoded, lens = batch.domain_encoded
-            codec_output = F.log_softmax(codec_output,dim=1)
-            codec_loss = nll_loss(codec_output,torch.squeeze(domain_encoded,1))
-            loss = cm_loss + codec_loss*0.0001
         if stage != sb.Stage.TRAIN:
+            cm_output = torch.softmax(cm_output.squeeze(1), dim=-1)
+            cm_score = cm_output[:, 1].unsqueeze(1)
             self.error_metrics.append(batch.id, cm_score, bonafide_encoded)
-        return loss
+
+        return cm_loss
 
     def on_stage_start(self, stage, epoch=None):
         """Gets called at the beginning of each epoch.
@@ -71,8 +106,15 @@ class CM(sb.Brain):
         """
         # Set up evaluation-only statistics trackers
         # self.top1 = []
+        if stage == sb.Stage.TRAIN:
+            if epoch <= 4:
+                new_lr = self.hparams.warmup_scheduler.get_next_value()
+                sb.nnet.schedulers.update_learning_rate(self.optimizer, new_lr)
+            if epoch == 5:
+                sb.nnet.schedulers.update_learning_rate(self.optimizer, 0.001)
+
         if stage != sb.Stage.TRAIN:
-            self.error_metrics = BinaryMetricStats(eval_opt="2021DF-progress")
+            self.error_metrics = BinaryMetricStats(eval_opt="2021LA-progress")
 
     def on_stage_end(self, stage, stage_loss, epoch=None):
         """Gets called at the end of an epoch.
@@ -102,20 +144,28 @@ class CM(sb.Brain):
 
         # At the end of validation...
         if stage == sb.Stage.VALID:
-            old_lr, new_lr = self.hparams.lr_scheduler(current_epoch = epoch)
-            sb.nnet.schedulers.update_learning_rate(self.optimizer, new_lr)
+            if epoch <= 4:
+                self.hparams.train_logger.log_stats(
+                    {"Epoch": epoch, "lr": "warmup"},
+                    train_stats={"loss": self.train_loss},
+                    valid_stats=stats,
+                )
 
-            # The train_logger writes a summary to stdout and to the logfile.
-            self.hparams.train_logger.log_stats(
-                {"Epoch": epoch, "lr": old_lr},
-                train_stats={"loss": self.train_loss},
-                valid_stats=stats,
-            )
+            else:
+                old_lr, new_lr = self.hparams.lr_scheduler([self.optimizer], current_epoch=epoch, current_loss=stage_loss)
+                sb.nnet.schedulers.update_learning_rate(self.optimizer, new_lr)
+
+                # The train_logger writes a summary to stdout and to the logfile.
+                self.hparams.train_logger.log_stats(
+                    {"Epoch": epoch, "lr": old_lr},
+                    train_stats={"loss": self.train_loss},
+                    valid_stats=stats,
+                )
 
             # Save the current checkpoint and delete previous checkpoints,
             self.checkpointer.save_and_keep_only(meta=stats,
                                                  num_to_keep=5,
-                                                 min_keys=["eer","min_tDCF"],
+                                                 min_keys=["eer"],
                                                  keep_recent=False
                                                  )
 
@@ -138,9 +188,11 @@ class CM(sb.Brain):
             loss = self.compute_objectives(out, batch, stage=stage)
             return loss.detach().cpu()
         else:
-            enc_output, codec_output = self.compute_forward(batch, stage=stage)
-            cm_loss, cm_score =  self.modules.cm_loss_metric(torch.squeeze(enc_output,1), is_train=False)
-            return cm_score, enc_output
+            cm_output = self.compute_forward(batch, stage=stage)
+            cm_output = torch.softmax(cm_output.squeeze(1), dim=-1)
+            cm_score = cm_output[:, 1].unsqueeze(1)
+            # cm_loss, cm_score =  self.modules.cm_loss_metric(torch.squeeze(enc_output,1), is_train=False)
+            return cm_score, cm_output
 
     def evaluate(
             self,
@@ -164,7 +216,6 @@ class CM(sb.Brain):
         self.on_evaluate_start(max_key=max_key, min_key=min_key)
         self.on_stage_start(Stage.TEST, epoch=None)
         self.modules.eval()
-        avg_test_loss = 0.0
 
         """
         added here
@@ -192,3 +243,12 @@ class CM(sb.Brain):
 
         self.step = 0
         return cm_score_dict, cm_emb_dict
+
+
+if __name__ =="__main__":
+    
+    # os.environ["CUDA_VISABLE_DEVICE"] = "1"
+    # # TDNN = CM_Decoder(input_shape=[ None, None,256],out_neurons=2)
+    # TDNN = VC_Discriminator(input_size=256,lin_neurons=512,out_neurons=4)
+    # print(summary(TDNN, torch.randn((64,256)), show_input=False))
+    pass

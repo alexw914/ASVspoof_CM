@@ -1,0 +1,178 @@
+seed: 10
+__set_seed: !!python/object/apply:torch.manual_seed [!ref <seed>]
+
+rir_folder : /home/alex/dataset/VoxCeleb/
+data_folder: cm_meta
+output_folder: !ref ./results/fbank_resnet18_2021_LA/<seed>
+save_folder: !ref <output_folder>/save
+train_log: !ref <output_folder>/train_log.txt
+
+train_annotation: !ref <data_folder>/cm_train.csv
+dev_annotation: !ref <data_folder>/cm_dev.csv
+eval_annotation: !ref <data_folder>/cm_eval.csv
+
+train_option: "2021LA"
+eval_option: "2021LA"
+
+n_mels: 60
+left_frames: 0
+right_frames: 0
+win_length: 64
+hop_length: 16
+
+emb_dim: 128
+# Training Parameters
+sample_rate: 16000
+sentence_len: 4.0
+number_of_epochs: 100
+batch_size: 80
+lr_start: 0.001
+
+dataloader_options:
+  batch_size: !ref <batch_size>
+  shuffle: True
+  drop_last: False
+  num_workers: 4
+  pin_memory: True 
+
+valid_dataloader_options:
+  batch_size: 128
+  shuffle: False
+  drop_last: False
+  num_workers: 6
+  pin_memory: True 
+
+# save checkpoint every N min
+#########-------------------Data----------------------##########
+#########-------------------End-----------------------##########
+
+train_logger: !new:speechbrain.utils.train_logger.FileTrainLogger
+  save_file: !ref <train_log>
+
+# cm_loss_metric: !new:loss.oneclass.OCSoftmax
+#   in_dim: !ref <emb_dim>
+
+weight: !new:torch.FloatTensor
+  data: [0.1,0.9]
+
+cm_loss_metric: !new:torch.nn.CrossEntropyLoss
+  weight: !ref <weight>
+
+#########-----------------Augment---------------------##########
+#########-----------------Start-----------------------##########
+add_rev: !new:speechbrain.lobes.augment.EnvCorrupt
+    openrir_folder: !ref <rir_folder>
+    openrir_max_noise_len: !ref <sentence_len>  # seconds
+    reverb_prob: 1
+    noise_prob: 0
+    noise_snr_low: 0
+    noise_snr_high: 15
+    rir_scale_factor: 1.0
+
+# SpecAugment: !new:speechbrain.lobes.augment.SpecAugment
+#    time_warp: True
+#    time_warp_window: 5
+#    time_warp_mode: bicubic
+#    freq_mask: True
+#    n_freq_mask: 2
+#    time_mask: True
+#    n_time_mask: 2
+#    replace_with_zero: False
+#    freq_mask_width: 8
+#    time_mask_width: 10
+
+add_noise: !new:speechbrain.lobes.augment.EnvCorrupt
+    openrir_folder: !ref <rir_folder>
+    openrir_max_noise_len: !ref <sentence_len>  # seconds
+    reverb_prob: 0
+    noise_prob: 1
+    noise_snr_low: 0
+    noise_snr_high: 15
+    rir_scale_factor: 1.0
+
+add_rev_noise: !new:speechbrain.lobes.augment.EnvCorrupt
+    openrir_folder: !ref <rir_folder>
+    openrir_max_noise_len: !ref <sentence_len>  # seconds
+    reverb_prob: 1.0
+    noise_prob: 1.0
+    noise_snr_low: 0
+    noise_snr_high: 15
+    rir_scale_factor: 1.0
+
+augment_pipeline: [
+    !ref <add_rev_noise>,
+    !ref <add_rev>,
+    !ref <add_noise>
+]
+concat_augment: True
+#########-----------------Augment---------------------##########
+#########------------------End-----------------------##########
+
+
+#########-----------------Modules---------------------##########
+#########-----------------Start-----------------------##########
+mean_var_norm: !new:speechbrain.processing.features.InputNormalization
+  norm_type: sentence
+  std_norm: False
+
+compute_features: !new:dataset.fbank.Fbank
+  n_mels: !ref <n_mels>
+  left_frames: !ref <left_frames>
+  right_frames: !ref <right_frames>
+  win_length: !ref <win_length>
+  hop_length: !ref <hop_length>
+  n_fft: 1024
+
+# compute_features: !new:dataset.feature_layers.LFCC
+#     fl: 320
+#     fs: 160
+#     fn: 512
+#     sr: 16000
+#     filter_num: 20
+         
+cm_encoder: !new:models.resnet.ResNetSE
+    layers: [2, 2, 2, 2] 
+    num_filters: [16, 32, 64, 128]
+    input_size: !ref <n_mels>
+    lin_neurons : !ref <emb_dim>
+
+
+epoch_counter: !new:speechbrain.utils.epoch_loop.EpochCounter
+  limit: !ref <number_of_epochs>
+
+warmup_scheduler: !new:speechbrain.nnet.schedulers.LinearWarmupScheduler
+  initial_value: 0.001
+  num_warmup_steps: 4 
+  num_training_steps: 0
+
+lr_scheduler: !new:speechbrain.nnet.schedulers.ReduceLROnPlateau
+  dont_halve_until_epoch: 10
+
+modules:
+  compute_features: !ref <compute_features>
+  add_noise: !ref <add_noise>
+  add_rev: !ref <add_rev>
+  add_rev_noise: !ref <add_rev_noise>
+  cm_encoder: !ref <cm_encoder>
+  mean_var_norm: !ref <mean_var_norm>
+  cm_loss_metric: !ref <cm_loss_metric>
+
+label_encoder: !new:speechbrain.dataio.encoder.CategoricalEncoder
+#########-----------------Modules---------------------##########
+#########-------------------End-----------------------##########
+
+
+#########-----------------Trainer---------------------##########
+#########-----------------Start-----------------------##########
+opt_class: !name:torch.optim.Adam
+  lr: 0
+  weight_decay: 0.001
+
+checkpointer: !new:speechbrain.utils.checkpoints.Checkpointer
+  checkpoints_dir: !ref <save_folder>
+  recoverables:
+    cm_encoder: !ref <cm_encoder>
+    counter: !ref <epoch_counter>
+    cm_loss_metric: !ref <cm_loss_metric>
+#########-----------------Trainer---------------------##########
+#########-------------------End-----------------------##########

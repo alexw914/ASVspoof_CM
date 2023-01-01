@@ -92,7 +92,7 @@ mean_var_norm: !new:speechbrain.processing.features.InputNormalization
 #    trainable: False
 #    n_bins: !ref <n_mels>
 
-compute_lfcc: !new:dataset.feature_layers.LFCC
+compute_features: !new:dataset.feature_layers.LFCC
     fl: 320
     fs: 160
     fn: 512
@@ -114,7 +114,7 @@ lr_scheduler: !new:speechbrain.nnet.schedulers.StepScheduler
   decay_drop: 20
 
 modules:
-  compute_lfcc: !ref <compute_lfcc>
+  compute_features: !ref <compute_lfcc>
   aug_codec: !ref <aug_codec>
   cm_encoder: !ref <cm_encoder>
   mean_var_norm: !ref <mean_var_norm>

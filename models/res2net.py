@@ -239,9 +239,9 @@ def resume_spk_model(model_file_path, network):
 
 if __name__ =="__main__":
     
-    nOut=512
+    nOut=128
     net_scale=4
-    num_filters = [32, 64, 128, 128]
-    model = Res2Net([3, 4, 6, 3], num_filters, nOut, net_scale, n_mels=80, log_input=True)
+    num_filters = [16, 32, 64, 128]
+    model = Res2Net([2, 2, 2, 2], num_filters, nOut, net_scale, n_mels=80, log_input=True)
     print(summary(model, torch.randn((32,80,400)), show_input=False))
     
