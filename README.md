@@ -102,7 +102,7 @@ Test the ASVspoof2021LA or DF, just
 ```
 python eval.py yaml/ecapa_2021_LA.yaml && python eval.py yaml/ecapa_2021_DF.yaml
 ```
-The test algorithm provide by organizers can not show the detailed EER or min-tDCF, if you want to get the detailed EER. You need to detailed in the website. [LA](https://competitions.codalab.org/competitions/35161) and [DF](https://competitions.codalab.org/competitions/35159）. In eval.py, it provides visualize option. Like this:
+The test algorithm provide by organizers can not show the detailed EER or min-tDCF, if you want to get the detailed EER. You need to detailed in the website. [LA](https://competitions.codalab.org/competitions/35161) and [DF](https://competitions.codalab.org/competitions/35159). In eval.py, it provides visualize option. Like this:
 <div  align="center"> <img src="matlab_plot/vis.png" width = "300" height = "300" align=center /></div>
 
 ## Plot
