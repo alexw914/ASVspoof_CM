@@ -31,15 +31,15 @@ The LA and DF need data augmentation, it's a hard work. you can refer this [repo
 
 You can use the data augmentation way in the project shown in the yaml file. It is not very efficent. Or you can design a new method.
 
-Recently, the new augmentation way provided by this [article](https://arxiv.org/pdf/2211.06546.pdf) is easier and efficient, but as the device and development environment, or may be wrong implementation, i can't reproduce the results in this article.
+Recently, the new augmentation way provided by this [article](https://arxiv.org/pdf/2211.06546.pdf) is easier and more efficient, but as the device and development environment, or may be wrong implementation, i can't reproduce the results in this article.
 
-The results of different models are as follows:
+Results of different models are as follows:
 
 | Model | Params | Augment | Acoustic features | 2021LA | 2021DF |
 |:------|:------:|:--:|:-------:|:------------:|:------------:|
-| ECAPA_TDNN_GLOB_c512-ContextASP-emb256  | 6.31M | codec | LFCC | EER 4.70% min-tDCF 0.2882 | - |
+| ECAPA_TDNN_GLOB_c512-ContextASP-emb256（half decay StepScheduler）  | 6.31M | codec | LFCC | EER 4.70% min-tDCF 0.2882 | - |
 |                                   |       | transmission | LFCC | - | EER 22.17% |
-| ResNet18-ASP-emb128(Warm-up) | 1.21M | MUSAN+RIR | FBANK(Blackman-window)-band trimming | EER 5.95% min-tDCF 0.334 | EER 16.15% |
+| ResNet18-ASP-emb128(Warm-up + ReduceLROnPlateau) | 1.21M | MUSAN+RIR | FBANK(Blackman-window)-band trimming | EER 5.95% min-tDCF 0.334 | EER 16.15% |
 
 ## Prepare
 ### Link
