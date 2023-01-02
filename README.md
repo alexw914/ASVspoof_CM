@@ -107,10 +107,8 @@ The test algorithm provide by organizers can not show the detailed EER or min-tD
 
 ## Plot
 The matlab_plot folder provide the algorithms for plot bar or DET curves. You just to change it for use.The important thing is that the scorefile format for plot and for submit to the website is not same. Figure like this
-<center class="half">
-<img src="matlab_plot/Detailed-eer.png" width=200/>
-<img src="matlab_plot/DET.png" width=200/>
-</center>
+| <img src="matlab_plot/Detailed-eer.png" width="250px"> | <img src="matlab_plot/DET.png" width="250px">|
+| ---- | ---- |
 
 ## Score fusion
 This fusion algorithm is provided by this [repo](https://github.com/yzyouzhang/ASVspoof2021_AIR). But the algorithm will change the index. If you submit the score file to website, you can't get the correct detailed EER.
