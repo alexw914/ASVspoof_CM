@@ -18,7 +18,7 @@ n_mels: 60
 left_frames: 0
 right_frames: 0
 win_length: 64
-hop_length: 16
+hop_length: 8
 
 emb_dim: 128
 # Training Parameters
