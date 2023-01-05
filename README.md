@@ -37,8 +37,8 @@ Results of different models are as follows:
 
 | Model | Params | Augment | Acoustic features | 2021LA | 2021DF |
 |:------|:------:|:--:|:-------:|:------------:|:------------:|
-| ECAPA_TDNN_GLOB_c512-ContextASP-emb256（half decay StepScheduler）  | 6.31M | codec | LFCC | EER 4.70% min-tDCF 0.2882 | - |
-|                                   |       | transmission | LFCC | - | EER 22.17% |
+| ECAPA_TDNN_GLOB_c512-ContextASP-emb256（half decay StepScheduler）  | 6.31M | transmission | LFCC | EER 4.70% min-tDCF 0.2882 | - |
+|                                   |       | compression | LFCC | - | EER 22.17% |
 | ResNet18-ASP-emb128(Warm-up + ReduceLROnPlateau) | 1.21M | MUSAN+RIR | FBANK(Blackman-window)-band trimming | EER 4.27% min-tDCF 0.2994 | EER 17.61% |
 
 ## Prepare
