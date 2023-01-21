@@ -39,7 +39,7 @@ Results of different models are as follows:
 |:------|:------:|:--:|:-------:|:------------:|:------------:|
 | ECAPA_TDNN_GLOB_c512-ContextASP-emb256（half decay StepScheduler）-P2SGradloss  | 6.31M | transmission | LFCC | EER 4.70% min-tDCF 0.2882 | - |
 |                                   |       | compression | LFCC | - | EER 22.17% |
-| ResNet18-ASP-emb128(Warm-up + ReduceLROnPlateau)-CrossEntropyLoss | 1.21M | MUSAN+RIR | FBANK(Blackman-window)-band trimming | EER 4.27% min-tDCF 0.2908 | EER 17.61% |
+| ResNet18-ASP-emb128(Warm-up + ReduceLROnPlateau)-P2SGradloss | 1.20M | MUSAN+RIR | FBANK(Blackman-window)p | EER 3.46% min-tDCF 0.2654 | EER 16.75% |
 
 ## Prepare
 ### Link
