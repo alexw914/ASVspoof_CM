@@ -46,7 +46,7 @@ class SEBasicBlock(nn.Module):
         self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, padding=1, bias=False)
         self.bn2 = nn.BatchNorm2d(planes)
         self.relu = nn.ReLU(inplace=True)
-        self.se = SELayer(planes, reduction)
+#         self.se = SELayer(planes, reduction)
         self.downsample = downsample
         self.stride = stride
 
@@ -59,7 +59,7 @@ class SEBasicBlock(nn.Module):
 
         out = self.conv2(out)
         out = self.bn2(out)
-        out = self.se(out)
+#         out = self.se(out)
 
         if self.downsample is not None:
             residual = self.downsample(x)
