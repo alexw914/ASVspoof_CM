@@ -3,7 +3,7 @@
 This project is baesd on [speechbrain](https://speechbrain.github.io).It can help you solve ASVspoof 2021 LA and DF task.
 
 ## Dataset
-This project is for ASVspoof2021 LA and DF task.This project is for (LA) partition of the ASVspoof 2021[here](https://www.asvspoof.org/https://datashare.is.ed.ac.uk/handle/10283/3336). Training data is ASVspoof 2019 [here](https://datashare.is.ed.ac.uk/handle/10283/3336).Preprare dataset put the ASVSpoof2021 LA and DF dataset in ASVSpoof2019/LA folder as:
+This project is for ASVspoof2021 LA and DF task [here](https://www.asvspoof.org/https://datashare.is.ed.ac.uk/handle/10283/3336). Training data is ASVspoof 2019 [here](https://datashare.is.ed.ac.uk/handle/10283/3336). Preprare dataset and put the ASVSpoof2021 LA and DF dataset in ASVSpoof2019/LA folder as:
 
         ├── LA
         │   ├── ASVspoof2019_LA_asv_protocols
