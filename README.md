@@ -19,7 +19,7 @@ This project is for ASVspoof2021 LA and DF task.This project is for (LA) partiti
         ├── LICENSE_text.txt
 
 ## Augment
-The LA and DF need data augmentation, it's a hard work. you can refer this [repo](https://github.com/yzyouzhang/ASVspoof2021_AIR). It provides the way of augment and some tips to train a more robust network. The [toolkit](https://github.com/idiap/acoustic-simulator) can help you.You can put the augment data in ASVspoof2019/LA/LADF_AUG folder as:
+The LA and DF task need data augmentation, it's a hard work. you can refer this [repo](https://github.com/yzyouzhang/ASVspoof2021_AIR). It provides the way of augment and some tips to train a more robust network. This [toolkit](https://github.com/idiap/acoustic-simulator) can help you.You can put the augment data in ASVspoof2019/LA/LADF_AUG folder as:
 
         LADF_aug    
         ├── codec
@@ -31,9 +31,9 @@ The LA and DF need data augmentation, it's a hard work. you can refer this [repo
 
 You can use the data augmentation way in the project shown in the yaml file. It is not very efficent. Or you can design a new method.
 
-Recently, the new augmentation way provided by this [article](https://arxiv.org/pdf/2211.06546.pdf) is easier and more efficient, but as the device and development environment, or may be wrong implementation, i can't reproduce the results in this article.
+Recently, the new augmentation way provided by this [article](https://arxiv.org/pdf/2211.06546.pdf).It is easier and more efficient, and just need MUSAN and RIRS_NOISES corpora. But as the device and development environment, or may be wrong implementation, i can't reproduce the results in this article.
 
-Results of different models are as follows:
+Results of some models are as follows:
 
 | Model | Params | Augment | Acoustic features | 2021LA | 2021DF |
 |:------|:------:|:--:|:-------:|:------------:|:------------:|
@@ -89,7 +89,7 @@ if all work above has down. You can train in ASVspoof2021.
 ```
 python train.py yaml/ecapa_2021_LA.yaml
 ```
-Or you can train in DF, the progress set will used as devset in LA and DF training. In ASVspoof2019, we test evalset in each epoch.
+Or you can train in DF, the progress set will used as dev set in LA and DF training. In ASVspoof2019, we test eval set in each epoch.
 
 If you want use other models, you just need to change the yaml file.
 
